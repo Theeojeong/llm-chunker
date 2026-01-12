@@ -1,0 +1,61 @@
+import nltk
+from typing import Generator, Tuple
+
+def split_text_into_processing_segments(
+    text: str, 
+    max_segment_size: int = 2600, 
+    overlap_size: int = 200
+) -> Generator[Tuple[str, int], None, None]:
+    """
+    Splits text into processing segments while respecting sentence boundaries.
+    
+    Args:
+        text: The full text to split.
+        max_segment_size: Maximum characters per segment (default: 2600 for optimal LLM context).
+        overlap_size: Number of characters to overlap between segments (default: 200).
+        
+    Yields:
+        Tuple of (segment_text, start_index)
+    """
+    n = len(text)
+    if n <= max_segment_size:
+        yield text, 0
+        return
+
+    start = 0
+    while start < n:
+        end = min(start + max_segment_size, n)
+        
+        # Adjust end to avoid cutting sentences in the middle
+        if end < n:
+            # Search in the last 20% of the segment
+            search_start = max(start + int(max_segment_size * 0.8), start)
+            # Look a bit beyond 'end' to find sentence completion if possible
+            search_limit = min(end + 200, n)
+            search_text = text[search_start:search_limit]
+            
+            try:
+                sentences = nltk.sent_tokenize(search_text)
+                if sentences:
+                    best_end = end
+                    # Search backwards for a sentence ending
+                    for sentence in reversed(sentences):
+                        idx = search_text.rfind(sentence)
+                        if idx != -1:
+                            abs_end = search_start + idx + len(sentence)
+                            # Ensure the new end is within a reasonable range (not too early)
+                            if start < abs_end <= start + max_segment_size + 200: 
+                                best_end = abs_end
+                                break
+                    end = best_end
+            except Exception:
+                # Fallback to hard cut if tokenization fails
+                pass
+
+        yield text[start:end], start
+        
+        if end == n:
+            break
+            
+        # Determine next start position with overlap
+        start = max(start + 1, end - overlap_size)

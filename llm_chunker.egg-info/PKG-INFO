@@ -1,0 +1,50 @@
+Metadata-Version: 2.1
+Name: llm-chunker
+Version: 0.1.0
+Summary: A semantic and legal text chunker based on LLM analysis
+Home-page: https://github.com/your-repo/llm-chunker
+Author: LLM Chunker Developer
+Author-email: example@email.com
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: openai>=1.0.0
+Requires-Dist: nltk>=3.6
+Provides-Extra: ollama
+Requires-Dist: ollama; extra == "ollama"
+
+# LLM Chunker
+
+A flexible, LLM-based text chunker capable of splitting documents based on semantic shifts, legal topics, or emotional flows.
+
+## Features
+
+- **Semantic Chunking**: Splits text where topics actually change, not just by token count.
+- **Legal Document Support**: Specialized prompts for detecting "Purpose", "Definition", "Article" boundaries.
+- **Pluggable Backend**: Supports OpenAI (ChatGPT) by default, but can be used with Ollama or any custom LLM function.
+
+## Installation
+
+```bash
+pip install llm-chunker
+```
+
+## Quick Start
+
+```python
+import os
+from llm_chunker import GenericChunker
+
+# Ensure OPENAI_API_KEY is set
+# os.environ["OPENAI_API_KEY"] = "sk-..."
+
+chunker = GenericChunker()
+text = "Section 1. Purpose... Section 2. Definitions..."
+
+chunks = chunker.split_text(text)
+for chunk in chunks:
+    print("--- CHUNK ---")
+    print(chunk)
+```
