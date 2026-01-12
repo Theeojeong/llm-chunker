@@ -122,32 +122,34 @@ analyzer = TransitionAnalyzer(
 chunker = GenericChunker(analyzer=analyzer)
 ```
 
-### Custom Prompts
+### Custom Prompts (PromptBuilder)
 
-Create domain-specific chunking logic:
+Use `PromptBuilder` to easily create custom prompts without writing functions manually:
 
 ```python
-def podcast_prompt(segment: str) -> str:
-    return f"""
-    Find where the podcast topic changes.
+from llm_chunker import GenericChunker, TransitionAnalyzer, PromptBuilder
 
-    TEXT: {segment}
+# Option 1: Use built-in presets
+prompt = PromptBuilder.podcast(language="en")
+chunker = GenericChunker(analyzer=TransitionAnalyzer(prompt_generator=prompt))
 
-    Return JSON:
-    {{
-      "transition_points": [
-        {{
-          "start_text": "Exact text where topic changes",
-          "topic_after": "New topic name",
-          "significance": 8
-        }}
-      ]
-    }}
-    """
-
-analyzer = TransitionAnalyzer(prompt_generator=podcast_prompt)
-chunker = GenericChunker(analyzer=analyzer)
+# Option 2: Create with custom options
+prompt = PromptBuilder.create(
+    domain="novel",           # podcast, novel, legal, news, meeting
+    find="speaker changes",   # topic changes, emotional shifts, scene changes
+    language="en",
+    extra_fields=["speaker_name"]
+)
 ```
+
+**Available Presets:**
+
+| Method                          | Use Case                |
+| ------------------------------- | ----------------------- |
+| `PromptBuilder.podcast()`       | Podcast topic changes   |
+| `PromptBuilder.novel_speaker()` | Novel speaker changes   |
+| `PromptBuilder.novel_scene()`   | Novel scene transitions |
+| `PromptBuilder.meeting()`       | Meeting agenda changes  |
 
 ---
 
@@ -218,6 +220,18 @@ create_ollama_caller(model="llama3") -> Callable
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE)
+
+---
+
+## ⭐ Star History
+
+<a href="https://star-history.com/#Theeojeong/llm-chunker&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Theeojeong/llm-chunker&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Theeojeong/llm-chunker&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Theeojeong/llm-chunker&type=Date" />
+ </picture>
+</a>
 
 ---
 

@@ -121,32 +121,34 @@ analyzer = TransitionAnalyzer(
 chunker = GenericChunker(analyzer=analyzer)
 ```
 
-### 커스텀 프롬프트 만들기
+### 커스텀 프롬프트 (PromptBuilder)
 
-도메인에 맞는 분할 로직을 직접 정의할 수 있습니다:
+`PromptBuilder`를 사용하면 함수를 직접 작성하지 않고도 커스텀 프롬프트를 쉽게 만들 수 있습니다:
 
 ```python
-def podcast_prompt(segment: str) -> str:
-    return f"""
-    팟캐스트에서 주제가 바뀌는 지점을 찾으세요.
+from llm_chunker import GenericChunker, TransitionAnalyzer, PromptBuilder
 
-    텍스트: {segment}
+# 방법 1: 미리 만들어진 프리셋 사용
+prompt = PromptBuilder.podcast(language="ko")
+chunker = GenericChunker(analyzer=TransitionAnalyzer(prompt_generator=prompt))
 
-    다음 JSON 형식으로 반환하세요:
-    {{
-      "transition_points": [
-        {{
-          "start_text": "주제가 바뀌는 정확한 텍스트",
-          "topic_after": "새로운 주제명",
-          "significance": 8
-        }}
-      ]
-    }}
-    """
-
-analyzer = TransitionAnalyzer(prompt_generator=podcast_prompt)
-chunker = GenericChunker(analyzer=analyzer)
+# 방법 2: 커스텀 옵션으로 생성
+prompt = PromptBuilder.create(
+    domain="novel",           # podcast, novel, legal, news, meeting etc..
+    find="speaker changes",   # topic changes, emotional shifts, scene changes
+    language="ko",
+    extra_fields=["speaker_name"]
+)
 ```
+
+**사용 가능한 프리셋:**
+
+| 메서드                          | 용도               |
+| ------------------------------- | ------------------ |
+| `PromptBuilder.podcast()`       | 팟캐스트 주제 변경 |
+| `PromptBuilder.novel_speaker()` | 소설 화자 변경     |
+| `PromptBuilder.novel_scene()`   | 소설 장면 전환     |
+| `PromptBuilder.meeting()`       | 회의록 안건 변경   |
 
 ---
 
@@ -219,6 +221,18 @@ create_ollama_caller(model="llama3") -> Callable
 ## 📄 라이선스
 
 MIT License - [LICENSE](LICENSE) 참조
+
+---
+
+## ⭐ Star History
+
+<a href="https://star-history.com/#Theeojeong/llm-chunker&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Theeojeong/llm-chunker&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Theeojeong/llm-chunker&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Theeojeong/llm-chunker&type=Date" />
+ </picture>
+</a>
 
 ---
 
