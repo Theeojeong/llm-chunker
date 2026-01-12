@@ -14,14 +14,20 @@ Return a SINGLE JSON object in the following format (no markdown):
 {{
   "transition_points": [
     {{
-      "start_text": "Text snippet where the change begins",
+      "start_text": "Text snippet where the change begins (exact quote from the text)",
       "topic_before": "Summary of the topic/mood BEFORE this point",
       "topic_after": "Summary of the topic/mood AFTER this point",
-      "significance": 8, 
+      "significance": <1-10 integer>,
       "explanation": "Brief explanation of why this is a transition point"
     }}
   ]
 }}
+
+SIGNIFICANCE SCORING GUIDE:
+- 1-3: Minor shifts (subtle mood change, small topic drift)
+- 4-6: Moderate transitions (clear topic change, notable mood shift)
+- 7-10: Major turning points (dramatic reversal, critical plot point, complete tone change)
+
 If no significant transitions are found, return {{ "transition_points": [] }}.
 """.strip()
 
@@ -42,10 +48,16 @@ Return a SINGLE JSON object in the following format (no markdown):
       "start_text": "Text snippet where the change begins (must match exactly)",
       "topic_before": "Legal context/article BEFORE this point",
       "topic_after": "Legal context/article AFTER this point",
-      "significance": 8, 
+      "significance": <1-10 integer>,
       "explanation": "Why this constitutes a legal section boundary"
     }}
   ]
 }}
+
+SIGNIFICANCE SCORING GUIDE:
+- 1-3: Minor clause variations
+- 4-6: Section transitions within same topic
+- 7-10: Major legal topic changes (new article, different legal domain)
+
 If no significant transitions are found, return {{ "transition_points": [] }}.
 """.strip()

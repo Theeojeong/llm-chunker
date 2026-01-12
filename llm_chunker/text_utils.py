@@ -1,6 +1,16 @@
 import nltk
 from typing import Generator, Tuple
 
+# Ensure NLTK punkt tokenizer is available
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt', quiet=True)
+try:
+    nltk.data.find('tokenizers/punkt_tab')
+except LookupError:
+    nltk.download('punkt_tab', quiet=True)
+
 def split_text_into_processing_segments(
     text: str, 
     max_segment_size: int = 2600, 

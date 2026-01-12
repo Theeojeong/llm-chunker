@@ -26,14 +26,15 @@ def openai_llm_caller(prompt: str) -> str:
     
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
-        # Fallback: Try to look for it in a local .env file manually if needed, 
-        # but standard practice is environment variable.
-        raise ValueError("OPENAI_API_KEY environment variable is not set.")
+        raise ValueError(
+            "OPENAI_API_KEY environment variable is not set.\n"
+            "Set it via: export OPENAI_API_KEY='your-key'\n"
+            "Or use Ollama: GenericChunker(analyzer=TransitionAnalyzer(llm_caller=ollama_llm_caller))"
+        )
 
     client = OpenAI(api_key=api_key)
     
     # Using 'gpt-4o' or 'gpt-3.5-turbo' as generic default
-    # You can change this to 'gpt-4-turbo' etc.
     model_name = os.environ.get("OPENAI_MODEL", "gpt-4o")
     
     try:
@@ -79,6 +80,27 @@ def sanitize_json_output(raw_text: str) -> str:
             text = text.rsplit("\n", 1)[0]
     return text.strip()
 
+
+def _extract_transition_points(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Flexibly extract transition points from various schema formats.
+    Supports: transition_points, emotional_phases, legal_sections, and any list-type value.
+    """
+    # Known schema keys (priority order)
+    known_keys = ["transition_points", "emotional_phases", "legal_sections", "topic_changes", "sections"]
+    
+    for key in known_keys:
+        if key in data and isinstance(data[key], list):
+            return {"transition_points": data[key]}
+    
+    # Fallback: find first list-type value
+    for key, value in data.items():
+        if isinstance(value, list):
+            return {"transition_points": value}
+    
+    return {"transition_points": []}
+
+
 class TransitionAnalyzer:
     def __init__(self, 
                  prompt_generator: Callable[[str], str], 
@@ -97,14 +119,8 @@ class TransitionAnalyzer:
                 cleaned = sanitize_json_output(raw_response)
                 try:
                     data = json.loads(cleaned)
-                    
-                    # Normalize various schema keys to 'transition_points'
-                    if "transition_points" in data:
-                        return data
-                    if "emotional_phases" in data:
-                        return {"transition_points": data["emotional_phases"]}
-                    if "legal_sections" in data:
-                        return {"transition_points": data["legal_sections"]}
+                    # Use flexible schema extraction
+                    return _extract_transition_points(data)
                         
                 except json.JSONDecodeError:
                     pass
