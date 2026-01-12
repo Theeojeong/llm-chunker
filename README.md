@@ -101,6 +101,38 @@ The library operates in three stages:
 2.  **Analysis**: The LLM analyzes the text to find "transition points" based on the provided prompt (e.g., "Find where the legal topic changes").
 3.  **Slicing**: The original text is sliced precisely at these detected points, ensuring logical continuity.
 
+### 4. Advanced: Writing Custom Prompts
+
+You can define your own logic for splitting text (e.g., by speaker, by scene, or by timestamp) by writing a custom prompt generator.
+
+**Important**: Your prompt **MUST** instruct the LLM to return a JSON object with a `transition_points` key. Each point must have a `start_text` field that exactly matches a snippet in the segment.
+
+```python
+from llm_chunker import GenericChunker, TransitionAnalyzer
+
+def my_custom_prompt(segment: str) -> str:
+    return f"""
+    Analyze the text and find where a new speaker starts speaking.
+
+    TEXT:
+    {segment}
+
+    Return JSON:
+    {{
+      "transition_points": [
+        {{
+          "start_text": "First 5-10 chars of the new speaker's sentence",
+          "speaker": "Name of speaker",
+          "significance": 10
+        }}
+      ]
+    }}
+    """
+
+chunker = GenericChunker(analyzer=TransitionAnalyzer(prompt_generator=my_custom_prompt))
+chunks = chunker.split_text(dialogue_text)
+```
+
 ---
 
 <div id="korean"></div>
@@ -184,6 +216,42 @@ chunker = GenericChunker(analyzer=local_analyzer)
 1.  **스캐닝 (Scanning)**: 전체 텍스트를 LLM 컨텍스트 윈도우에 맞는 크기로 훑습니다.
 2.  **분석 (Analysis)**: LLM에게 현재 텍스트의 흐름이 바뀌는 지점(법적 조항 변경, 감정 변화 등)을 찾도록 요청합니다.
 3.  **분할 (Slicing)**: LLM이 찾아낸 정확한 위치를 기반으로 원본 텍스트를 자릅니다. 이를 통해 문장이 중간에 잘리거나 문맥이 끊기는 현상을 방지합니다.
+
+### 4. 심화: 커스텀 프롬프트 작성법 (나만의 기준 만들기)
+
+화자(Speaker)가 바뀔 때, 혹은 소설의 장면(Scene)이 전환될 때 등 나만의 기준으로 자르고 싶다면 프롬프트 함수를 직접 작성하세요.
+
+**중요**: 프롬프트는 반드시 LLM에게 `transition_points` 키를 포함한 JSON을 반환하도록 지시해야 하며, 각 포인트는 원본 텍스트와 정확히 일치하는 `start_text`를 포함해야 합니다.
+
+```python
+from llm_chunker import GenericChunker, TransitionAnalyzer
+
+def my_scene_prompt(segment: str) -> str:
+    return f"""
+    다음 소설 텍스트에서 '장면(Scene)'이 전환되는 지점을 찾으세요.
+    시간이나 장소가 바뀌는 문장을 찾으면 됩니다.
+
+    텍스트:
+    {segment}
+
+    다음 JSON 포맷으로 반환하세요 (마크다운 없이):
+    {{
+      "transition_points": [
+        {{
+          "start_text": "장면이 바뀌는 문장의 첫 5~10글자 (정확히 일치해야 함)",
+          "reason": "장소가 거실에서 부엌으로 바뀜",
+          "significance": 10
+        }}
+      ]
+    }}
+    """
+
+# 내맘대로 프롬프트 적용
+my_analyzer = TransitionAnalyzer(prompt_generator=my_scene_prompt)
+chunker = GenericChunker(analyzer=my_analyzer)
+
+chunks = chunker.split_text(novel_text)
+```
 
 ---
 
