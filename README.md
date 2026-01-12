@@ -112,3 +112,13 @@ for i, chunk in enumerate(chunks):
 ## License
 
 This project is licensed under the MIT License.
+
+## Star History
+
+<a href="https://star-history.com/#Theeojeong/llm-chunker&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Theeojeong/llm-chunker&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Theeojeong/llm-chunker&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Theeojeong/llm-chunker&type=Date" />
+ </picture>
+</a>
