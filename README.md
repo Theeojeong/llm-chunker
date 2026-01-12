@@ -133,6 +133,51 @@ chunker = GenericChunker(analyzer=TransitionAnalyzer(prompt_generator=my_custom_
 chunks = chunker.split_text(dialogue_text)
 ```
 
+#### Example 2: Markdown Header Splitter
+
+```python
+def markdown_header_prompt(segment: str) -> str:
+    return f"""
+    Find where a new Markdown header (starts with #, ##, ###) appears.
+
+    TEXT:
+    {segment}
+
+    Return JSON:
+    {{
+      "transition_points": [
+        {{
+          "start_text": "# Header Title",
+          "significance": 10
+        }}
+      ]
+    }}
+    """
+```
+
+#### Example 3: Podcast Topic Switch
+
+```python
+def podcast_topic_prompt(segment: str) -> str:
+    return f"""
+    The following is a podcast transcript. Find where the host moves to a completely new topic or segment (e.g., "Moving on...", "Next topic...").
+
+    TEXT:
+    {segment}
+
+    Return JSON:
+    {{
+      "transition_points": [
+        {{
+          "start_text": "Moving on to our next news item...",
+          "topic_after": "Tech News Segment",
+          "significance": 9
+        }}
+      ]
+    }}
+    """
+```
+
 ---
 
 <div id="korean"></div>
@@ -251,6 +296,52 @@ my_analyzer = TransitionAnalyzer(prompt_generator=my_scene_prompt)
 chunker = GenericChunker(analyzer=my_analyzer)
 
 chunks = chunker.split_text(novel_text)
+```
+
+#### 예시 2: 마크다운 헤더(Header) 기준 분할
+
+```python
+def markdown_header_prompt(segment: str) -> str:
+    return f"""
+    텍스트에서 마크다운 헤더(#, ##, ### 등)가 시작되는 지점을 모두 찾으세요.
+
+    텍스트:
+    {segment}
+
+    JSON 반환:
+    {{
+      "transition_points": [
+        {{
+          "start_text": "## 2. 설치 방법",
+          "significance": 10
+        }}
+      ]
+    }}
+    """
+```
+
+#### 예시 3: 팟캐스트/유튜브 주제 전환
+
+```python
+def podcast_topic_prompt(segment: str) -> str:
+    return f"""
+    다음 팟캐스트 대본에서 대화의 주제가 완전히 바뀌거나 새로운 코너로 넘어가는 지점을 찾으세요.
+    (예: "자, 다음 주제로 넘어가 볼까요?", "이제 광고 듣고 오겠습니다" 등)
+
+    텍스트:
+    {segment}
+
+    JSON 반환:
+    {{
+      "transition_points": [
+        {{
+          "start_text": "자, 그럼 이제 경제 뉴스를 살펴볼까요?",
+          "topic_after": "경제 뉴스 코너",
+          "significance": 9
+        }}
+      ]
+    }}
+    """
 ```
 
 ---
