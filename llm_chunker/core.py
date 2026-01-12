@@ -83,12 +83,16 @@ class GenericChunker:
         # Sort and Filter (simple logic: deduplicate close points)
         points.sort(key=lambda x: x["position_in_full_text"])
         
+        # Filter by significance first
+        high_sig_points = [p for p in points if p.get("significance", 0) >= 7]
+        
         filtered = []
         last_pos = -9999
         min_gap = 200 # Minimum characters between chunks
         
-        for p in points:
+        for p in high_sig_points:
             pos = p["position_in_full_text"]
+            
             if pos - last_pos >= min_gap:
                 filtered.append(p)
                 last_pos = pos

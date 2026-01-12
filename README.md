@@ -49,8 +49,18 @@ os.environ["OPENAI_API_KEY"] = "sk-..."
 chunker = GenericChunker()
 
 # 3. Split Text
-long_text = "..."
-chunks = chunker.split_text(long_text)
+# "Peaceful Morning" -> "Work Crisis" (Topic Shift)
+text = """
+The sun rose gently over the horizon, casting a warm golden glow across the bedroom.
+Birds were chirping locally, and the smell of fresh coffee wafted through the air.
+It was a perfect, peaceful Sunday morning.
+
+Suddenly, the phone rang, shattering the silence.
+"We have a server outage!" the manager screamed.
+Peace was over. It was time to get to work.
+"""
+
+chunks = chunker.split_text(text)
 
 for i, chunk in enumerate(chunks):
     print(f"--- Chunk {i+1} ---")
@@ -212,11 +222,22 @@ os.environ["OPENAI_API_KEY"] = "sk-..."
 # 2. 청커 초기화
 chunker = GenericChunker()
 
-# 3. 텍스트 분할
-text = "매우 긴 텍스트..."
+# 3. 텍스트 분할 실행
+# "평화로운 아침" -> "긴급 상황" (주제 전환 예시)
+text = """
+수평선 위로 해가 부드럽게 떠오르며 침실을 따스한 황금빛으로 물들였습니다.
+새들은 지저귀고, 갓 내린 커피 향기가 공기 중에 은은하게 퍼졌습니다.
+완벽하고 평화로운 일요일 아침이었습니다.
+
+갑자기 전화벨이 울리며 정적을 깼습니다.
+"지금 서버가 다운됐어요!" 매니저가 소리쳤습니다.
+평화는 끝났습니다. 이제 일할 시간입니다.
+"""
+
 chunks = chunker.split_text(text)
 
 for chunk in chunks:
+    print(f"--- Chunk ---")
     print(chunk)
 ```
 
