@@ -1,28 +1,16 @@
-Metadata-Version: 2.4
+Metadata-Version: 2.1
 Name: llm-chunker
-Version: 0.1.0
-Summary: A semantic and legal text chunker based on LLM analysis
+Version: 0.1.5
+Summary: Add your description here
 Home-page: https://github.com/Theeojeong/llm-chunker
 Author: Theeojeong
 Author-email: wogusto13@gmail.com
-Classifier: Programming Language :: Python :: 3
-Classifier: License :: OSI Approved :: MIT License
-Classifier: Operating System :: OS Independent
 Requires-Python: >=3.9
 Description-Content-Type: text/markdown
 License-File: LICENSE
-Requires-Dist: openai>=1.0.0
 Requires-Dist: nltk>=3.6
-Dynamic: author
-Dynamic: author-email
-Dynamic: classifier
-Dynamic: description
-Dynamic: description-content-type
-Dynamic: home-page
-Dynamic: license-file
-Dynamic: requires-dist
-Dynamic: requires-python
-Dynamic: summary
+Requires-Dist: openai>=1.0.0
+Requires-Dist: python-dotenv>=1.2.1
 
 <div align="center">
 

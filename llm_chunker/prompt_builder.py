@@ -100,12 +100,20 @@ class PromptBuilder:
             Callable[[str], str]: 프롬프트 생성 함수
         """
         # 도메인 설명 가져오기
-        domain_desc = cls.DOMAIN_DESCRIPTIONS.get(domain, cls.DOMAIN_DESCRIPTIONS["general"])
-        domain_text = domain_desc.get(language, domain_desc["en"])
+        if domain in cls.DOMAIN_DESCRIPTIONS:
+            domain_desc = cls.DOMAIN_DESCRIPTIONS[domain]
+            domain_text = domain_desc.get(language, domain_desc["en"])
+        else:
+            # 미리 정의되지 않은 경우 입력값 그대로 사용
+            domain_text = domain
         
         # 감지 대상 설명 가져오기
-        find_desc = cls.FIND_DESCRIPTIONS.get(find, cls.FIND_DESCRIPTIONS["topic changes"])
-        find_text = find_desc.get(language, find_desc["en"])
+        if find in cls.FIND_DESCRIPTIONS:
+            find_desc = cls.FIND_DESCRIPTIONS[find]
+            find_text = find_desc.get(language, find_desc["en"])
+        else:
+            # 미리 정의되지 않은 경우 입력값 그대로 사용
+            find_text = find
         
         # 추가 필드 JSON 생성
         extra_json = ""
