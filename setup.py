@@ -2,13 +2,13 @@ from setuptools import setup, find_packages
 
 setup(
     name="llm-chunker",
-    version="0.1.2",
+    version="0.1.3",
     description="A semantic and legal text chunker based on LLM analysis",
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
-    author="LLM Chunker Developer",
-    author_email="example@email.com",
-    url="https://github.com/your-repo/llm-chunker",
+    author="Theeojeong",
+    author_email="wogusto13@gmail.com",
+    url="https://github.com/Theeojeong/llm-chunker",
     packages=find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -21,6 +21,5 @@ setup(
         "nltk>=3.6",
     ],
     extras_require={
-        "ollama": ["ollama"],
     },
 )

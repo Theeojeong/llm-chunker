@@ -7,18 +7,11 @@ from typing import Dict, Any, Callable, Optional
 # ── Logger Setup ──
 logger = logging.getLogger("llm_chunker")
 
-# Optional imports to avoid hard crashes if dependencies are missing
 try:
     from openai import OpenAI
     HAS_OPENAI = True
 except ImportError:
     HAS_OPENAI = False
-
-try:
-    import ollama
-    HAS_OLLAMA = True
-except ImportError:
-    HAS_OLLAMA = False
 
 
 def create_openai_caller(model: str = "gpt-4o") -> Callable[[str], str]:
@@ -46,7 +39,6 @@ def create_openai_caller(model: str = "gpt-4o") -> Callable[[str], str]:
             raise ValueError(
                 "OPENAI_API_KEY environment variable is not set.\n"
                 "Set it via: export OPENAI_API_KEY='your-key'\n"
-                "Or use Ollama: GenericChunker(analyzer=TransitionAnalyzer(llm_caller=create_ollama_caller()))"
             )
 
         client = OpenAI(api_key=api_key)
@@ -78,34 +70,7 @@ def create_openai_caller(model: str = "gpt-4o") -> Callable[[str], str]:
     return caller
 
 
-def create_ollama_caller(model: str = "llama3") -> Callable[[str], str]:
-    """
-    Factory function to create an Ollama LLM caller with a specific model.
-    
-    Args:
-        model: The Ollama model to use (e.g., "llama3", "mistral", "codellama")
-    
-    Returns:
-        Callable[[str], str]: A function that takes a prompt and returns the LLM response.
-    
-    Example:
-        >>> analyzer = TransitionAnalyzer(
-        ...     prompt_generator=get_default_prompt,
-        ...     llm_caller=create_ollama_caller("mistral")
-        ... )
-    """
-    def caller(prompt: str) -> str:
-        if not HAS_OLLAMA:
-            raise ImportError("Ollama library is not installed.")
-        
-        logger.info(f"[LLM] Using Ollama ({model})")
-        logger.debug(f"[LLM] Sending prompt ({len(prompt)} chars)")
-        response = ollama.chat(model=model, messages=[{"role": "user", "content": prompt}])
-        content = response["message"]["content"]
-        logger.debug(f"[LLM] Received response ({len(content)} chars)")
-        return content
-    
-    return caller
+
 
 
 # ── Legacy functions for backward compatibility ──
@@ -118,17 +83,11 @@ def openai_llm_caller(prompt: str) -> str:
     return create_openai_caller(model_name)(prompt)
 
 
-def ollama_llm_caller(prompt: str) -> str:
-    """
-    Default Ollama caller using 'llama3'.
-    For custom models, use create_ollama_caller(model_name) instead.
-    """
-    return create_ollama_caller("llama3")(prompt)
+
 
 
 # ──────────────────────────────────────────────────────────────
 # [Configuration]
-# Change this to switch between OpenAI and Ollama globally
 # ──────────────────────────────────────────────────────────────
 DEFAULT_LLM_CALLER = openai_llm_caller 
 

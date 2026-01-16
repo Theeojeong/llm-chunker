@@ -41,7 +41,7 @@ pip install llm-chunker
 **Requirements:**
 
 - Python 3.8+
-- OpenAI API key (or Ollama for local LLM)
+- OpenAI API key
 
 ---
 
@@ -108,20 +108,6 @@ chunker = GenericChunker(
 chunks = chunker.split_text(legal_document)
 ```
 
-### Local LLM (Ollama)
-
-```python
-from llm_chunker import GenericChunker
-from llm_chunker.analyzer import TransitionAnalyzer, create_ollama_caller
-
-analyzer = TransitionAnalyzer(
-    prompt_generator=get_default_prompt,
-    llm_caller=create_ollama_caller("llama3")  # or "mistral", "codellama"
-)
-
-chunker = GenericChunker(analyzer=analyzer)
-```
-
 ### Custom Prompts (PromptBuilder)
 
 Use `PromptBuilder` to easily create custom prompts without writing functions manually:
@@ -175,13 +161,12 @@ prompt = PromptBuilder.create(
 
 ### Factory Functions
 
+````python
+
 ```python
 # OpenAI
 create_openai_caller(model="gpt-4o") -> Callable
-
-# Ollama (local)
-create_ollama_caller(model="llama3") -> Callable
-```
+````
 
 ---
 

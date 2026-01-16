@@ -22,7 +22,7 @@ _글자 수가 아닌 의미 단위로 문서를 분할합니다._
 
 ## ✨ 왜 LLM Chunker인가?
 
-기존 청커는 글자 수나 정규식으로 텍스트를 분할해서, 문장 중간에서 잘리는 경우가 많습니다. **LLM Chunker**는 맥락을 이해합니다—소설의 감정 변화, 법률 문서의 조항 경계, 팟캐스트의 주제 전환을 감지합니다.
+기존 청커는 글자 수나 정규식으로 텍스트를 분할해서, 문장 중간에서 잘리는 경우가 많습니다. **LLM Chunker**는 맥락을 이해합니다—소설의 감정 변화, 법률 문서의 조항 경계, 주제 전환 등을 감지합니다.
 
 | 기존 청킹          | LLM Chunker          |
 | ------------------ | -------------------- |
@@ -41,7 +41,7 @@ pip install llm-chunker
 **요구사항:**
 
 - Python 3.8+
-- OpenAI API 키 (또는 로컬 LLM용 Ollama)
+- OpenAI API 키
 
 ---
 
@@ -107,20 +107,6 @@ chunker = GenericChunker(
 chunks = chunker.split_text(legal_document)
 ```
 
-### 로컬 LLM 사용 (Ollama)
-
-```python
-from llm_chunker import GenericChunker
-from llm_chunker.analyzer import TransitionAnalyzer, create_ollama_caller
-
-analyzer = TransitionAnalyzer(
-    prompt_generator=get_default_prompt,
-    llm_caller=create_ollama_caller("llama3")  # 또는 "mistral", "codellama"
-)
-
-chunker = GenericChunker(analyzer=analyzer)
-```
-
 ### 커스텀 프롬프트 (PromptBuilder)
 
 `PromptBuilder`를 사용하면 함수를 직접 작성하지 않고도 커스텀 프롬프트를 쉽게 만들 수 있습니다:
@@ -174,13 +160,12 @@ prompt = PromptBuilder.create(
 
 ### 팩토리 함수
 
+````python
+
 ```python
 # OpenAI
 create_openai_caller(model="gpt-4o") -> Callable
-
-# Ollama (로컬)
-create_ollama_caller(model="llama3") -> Callable
-```
+````
 
 ---
 

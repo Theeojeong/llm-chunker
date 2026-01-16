@@ -13,7 +13,7 @@ except LookupError:
 
 def split_text_into_processing_segments(
     text: str, 
-    max_segment_size: int = 2600, 
+    max_segment_size: int = 2600,
     overlap_size: int = 200
 ) -> Generator[Tuple[str, int], None, None]:
     """

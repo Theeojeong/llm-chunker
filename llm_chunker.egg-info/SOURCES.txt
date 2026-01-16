@@ -1,3 +1,4 @@
+LICENSE
 MANIFEST.in
 README.md
 requirements.txt
@@ -5,6 +6,8 @@ setup.py
 llm_chunker/__init__.py
 llm_chunker/analyzer.py
 llm_chunker/core.py
+llm_chunker/fuzzy_match.py
+llm_chunker/prompt_builder.py
 llm_chunker/prompts.py
 llm_chunker/text_utils.py
 llm_chunker.egg-info/PKG-INFO
