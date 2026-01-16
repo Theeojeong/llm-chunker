@@ -37,13 +37,14 @@ class GenericChunker:
         """
         # Configure logging based on verbose flag
         if verbose:
-            logging.basicConfig(
-                level=logging.DEBUG,
-                format='%(asctime)s [%(levelname)s] %(message)s',
-                datefmt='%H:%M:%S'
-            )
+            logger.setLevel(logging.DEBUG)
+            # Add handler if none exists
+            if not logger.handlers:
+                handler = logging.StreamHandler()
+                handler.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', datefmt='%H:%M:%S'))
+                logger.addHandler(handler)
         else:
-            logging.basicConfig(level=logging.WARNING)
+            logger.setLevel(logging.WARNING)
         
         if analyzer is None:
             self.analyzer = TransitionAnalyzer(prompt_generator=get_default_prompt)
