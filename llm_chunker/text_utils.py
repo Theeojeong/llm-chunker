@@ -13,8 +13,8 @@ except LookupError:
 
 def split_text_into_processing_segments(
     text: str, 
-    max_segment_size: int = 2600,
-    overlap_size: int = 200
+    max_segment_size: int = 5000,
+    overlap_size: int = 400
 ) -> Generator[Tuple[str, int], None, None]:
     """
     Splits text into processing segments while respecting sentence boundaries.
@@ -48,15 +48,22 @@ def split_text_into_processing_segments(
                 sentences = nltk.sent_tokenize(search_text)
                 if sentences:
                     best_end = end
-                    # Search backwards for a sentence ending
-                    for sentence in reversed(sentences):
-                        idx = search_text.rfind(sentence)
-                        if idx != -1:
-                            abs_end = search_start + idx + len(sentence)
-                            # Ensure the new end is within a reasonable range (not too early)
-                            if start < abs_end <= start + max_segment_size + 200: 
-                                best_end = abs_end
-                                break
+                    # Find the last complete sentence that fits within the limit
+                    cumulative_len = 0
+                    last_valid_end = None
+                    for sentence in sentences:
+                        # Find this sentence's position in search_text
+                        sent_start = search_text.find(sentence, cumulative_len)
+                        if sent_start == -1:
+                            continue
+                        sent_end = sent_start + len(sentence)
+                        abs_end = search_start + sent_end
+                        # Check if this sentence ending is within valid range
+                        if start < abs_end <= start + max_segment_size + 200:
+                            last_valid_end = abs_end
+                        cumulative_len = sent_end
+                    if last_valid_end:
+                        best_end = last_valid_end
                     end = best_end
             except Exception:
                 # Fallback to hard cut if tokenization fails
@@ -68,4 +75,7 @@ def split_text_into_processing_segments(
             break
             
         # Determine next start position with overlap
-        start = max(start + 1, end - overlap_size)
+        # Prioritize overlap_size, but ensure minimum progress to avoid infinite loop
+        next_start = end - overlap_size
+        min_progress = max(overlap_size, 100)  # At least move by overlap_size or 100 chars
+        start = max(start + min_progress, next_start)

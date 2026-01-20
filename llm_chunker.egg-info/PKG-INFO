@@ -1,6 +1,6 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.4
 Name: llm-chunker
-Version: 0.1.5
+Version: 0.1.9
 Summary: Add your description here
 Home-page: https://github.com/Theeojeong/llm-chunker
 Author: Theeojeong
@@ -11,6 +11,11 @@ License-File: LICENSE
 Requires-Dist: nltk>=3.6
 Requires-Dist: openai>=1.0.0
 Requires-Dist: python-dotenv>=1.2.1
+Dynamic: author
+Dynamic: author-email
+Dynamic: home-page
+Dynamic: license-file
+Dynamic: requires-python
 
 <div align="center">
 
@@ -123,32 +128,20 @@ chunks = chunker.split_text(legal_document)
 
 ### 커스텀 프롬프트 (PromptBuilder)
 
-`PromptBuilder`를 사용하면 함수를 직접 작성하지 않고도 커스텀 프롬프트를 쉽게 만들 수 있습니다:
+`PromptBuilder`를 사용하면 원하는 기준에 맞춰 커스텀 프롬프트를 자유롭게 생성할 수 있습니다.
 
 ```python
 from llm_chunker import GenericChunker, TransitionAnalyzer, PromptBuilder
 
-# 방법 1: 미리 만들어진 프리셋 사용
-prompt = PromptBuilder.podcast(language="ko")
-chunker = GenericChunker(analyzer=TransitionAnalyzer(prompt_generator=prompt))
-
-# 방법 2: 커스텀 옵션으로 생성
+# 예시: 웹소설에서 특정 장면 찾기
 prompt = PromptBuilder.create(
-    domain="novel",           # podcast, novel, legal, news, meeting etc..
-    find="speaker changes",   # topic changes, emotional shifts, scene changes
-    language="ko",
-    extra_fields=["speaker_name"]
+    domain="웹소설",
+    find="주인공이 회귀를 깨닫는 장면",
+    language="ko"
 )
+
+chunker = GenericChunker(analyzer=TransitionAnalyzer(prompt_generator=prompt))
 ```
-
-**사용 가능한 프리셋:**
-
-| 메서드                          | 용도               |
-| ------------------------------- | ------------------ |
-| `PromptBuilder.podcast()`       | 팟캐스트 주제 변경 |
-| `PromptBuilder.novel_speaker()` | 소설 화자 변경     |
-| `PromptBuilder.novel_scene()`   | 소설 장면 전환     |
-| `PromptBuilder.meeting()`       | 회의록 안건 변경   |
 
 ---
 

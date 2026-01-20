@@ -48,94 +48,116 @@ pip install llm-chunker
 ## 🚀 Quick Start
 
 ```python
-from llm_chunker import GenericChunker
-
-# Set your API key
 import os
 os.environ["OPENAI_API_KEY"] = "sk-..."
 
-# Create chunker and split text
-chunker = GenericChunker()
-chunks = chunker.split_text(your_text)
+from llm_chunker import GenericChunker
 
-for i, chunk in enumerate(chunks):
-    print(f"[Chunk {i+1}] {chunk[:100]}...")
+chunker = GenericChunker()
+chunks = chunker.split_text(your_text)  # Returns list[str]
 ```
 
 ---
 
-## 📖 Examples
-
-### Choose Your Model
+## 📖 Basic Example
 
 ```python
 from llm_chunker import GenericChunker
-from llm_chunker.analyzer import TransitionAnalyzer, create_openai_caller
-
-# Option 1: Specify model directly
-analyzer = TransitionAnalyzer(
-    prompt_generator=get_default_prompt,
-    model="gpt-4o"  # or "gpt-5-nano", "gpt-3.5-turbo"
-)
-
-# Option 2: Use factory function
-analyzer = TransitionAnalyzer(
-    prompt_generator=get_default_prompt,
-    llm_caller=create_openai_caller("gpt-4o-mini")
-)
-
-chunker = GenericChunker(analyzer=analyzer)
-```
-
-### Legal Documents
-
-```python
-from llm_chunker import GenericChunker
-from llm_chunker.analyzer import TransitionAnalyzer
-from llm_chunker.prompts import get_legal_prompt
-
-analyzer = TransitionAnalyzer(
-    prompt_generator=get_legal_prompt,
-    model="gpt-4o"
-)
 
 chunker = GenericChunker(
-    analyzer=analyzer,
-    significance_threshold=6,  # Lower for more splits
-    min_chunk_gap=500          # Minimum chars between splits
+    model="gpt-4o",
+    significance_threshold=7,  # Only split at significance 7+
+    min_chunk_gap=200,         # Min chars between splits
+    verbose=True,              # Enable detailed logging
+    show_progress=True,        # Show progress + chunk results
 )
 
-chunks = chunker.split_text(legal_document)
+chunks = chunker.split_text(your_text)  # list[str]
 ```
 
-### Custom Prompts (PromptBuilder)
+---
 
-Use `PromptBuilder` to easily create custom prompts without writing functions manually:
+## 📖 Custom Prompt Examples
+
+### Method 1: Use PromptBuilder (Recommended)
 
 ```python
 from llm_chunker import GenericChunker, TransitionAnalyzer, PromptBuilder
 
-# Option 1: Use built-in presets
-prompt = PromptBuilder.podcast(language="en")
-chunker = GenericChunker(analyzer=TransitionAnalyzer(prompt_generator=prompt))
-
-# Option 2: Create with custom options
+# Just specify domain and what to find - prompt is auto-generated
 prompt = PromptBuilder.create(
-    domain="novel",           # podcast, novel, legal, news, meeting
-    find="speaker changes",   # topic changes, emotional shifts, scene changes
-    language="en",
-    extra_fields=["speaker_name"]
+    domain="novel",
+    find="emotional shifts or scene changes",
 )
+
+analyzer = TransitionAnalyzer(
+    prompt_generator=prompt,
+    model="gpt-4o",
+)
+
+chunker = GenericChunker(analyzer=analyzer)
+chunks = chunker.split_text(novel_text)
 ```
 
-**Available Presets:**
+**PromptBuilder.create() Parameters:**
 
-| Method                          | Use Case                |
-| ------------------------------- | ----------------------- |
-| `PromptBuilder.podcast()`       | Podcast topic changes   |
-| `PromptBuilder.novel_speaker()` | Novel speaker changes   |
-| `PromptBuilder.novel_scene()`   | Novel scene transitions |
-| `PromptBuilder.meeting()`       | Meeting agenda changes  |
+| Parameter            | Type  | Default              | Description                 |
+| -------------------- | ----- | -------------------- | --------------------------- |
+| `domain`             | `str` | `"text"`             | Domain of text to analyze   |
+| `find`               | `str` | `"semantic changes"` | Type of transitions to find |
+| `custom_instruction` | `str` | `None`               | Additional instructions     |
+
+### Method 2: Use Built-in Prompts (Legal)
+
+```python
+from llm_chunker import GenericChunker, TransitionAnalyzer
+from llm_chunker.prompts import get_legal_prompt
+
+analyzer = TransitionAnalyzer(
+    prompt_generator=get_legal_prompt,
+    model="gpt-4o",
+)
+
+chunker = GenericChunker(analyzer=analyzer)
+chunks = chunker.split_text(legal_document)
+```
+
+Additional built-in prompts to be updated
+
+### Method 3: Write Custom Prompt Function
+
+```python
+from llm_chunker import GenericChunker, TransitionAnalyzer
+
+def my_custom_prompt(segment: str) -> str:
+    return f"""
+Analyze the following text and identify points where the topic changes.
+
+Text:
+{segment}
+
+Return JSON format:
+{{
+  "transition_points": [
+    {{
+      "start_text": "Exact quote where change begins",
+      "topic_before": "Topic before this point",
+      "topic_after": "Topic after this point",
+      "significance": 1-10 integer,
+      "explanation": "Brief explanation"
+    }}
+  ]
+}}
+""".strip()
+
+analyzer = TransitionAnalyzer(
+    prompt_generator=my_custom_prompt,
+    model="gpt-4o",
+)
+
+chunker = GenericChunker(analyzer=analyzer)
+chunks = chunker.split_text(your_text)
+```
 
 ---
 
@@ -143,30 +165,23 @@ prompt = PromptBuilder.create(
 
 ### `GenericChunker`
 
-| Parameter                | Type                 | Default | Description                       |
-| ------------------------ | -------------------- | ------- | --------------------------------- |
-| `analyzer`               | `TransitionAnalyzer` | `None`  | Custom analyzer with prompt/model |
-| `significance_threshold` | `int`                | `7`     | Min significance score (1-10)     |
-| `min_chunk_gap`          | `int`                | `200`   | Min characters between splits     |
-| `max_chunk_size`         | `int`                | `5000`  | Fallback chunk size               |
-| `verbose`                | `bool`               | `False` | Enable detailed logging           |
+| Parameter                | Type                 | Default | Description                          |
+| ------------------------ | -------------------- | ------- | ------------------------------------ |
+| `analyzer`               | `TransitionAnalyzer` | `None`  | Custom analyzer (prompt/model)       |
+| `model`                  | `str`                | `None`  | OpenAI model name (when no analyzer) |
+| `significance_threshold` | `int`                | `7`     | Min significance score (1-10)        |
+| `min_chunk_gap`          | `int`                | `200`   | Min characters between splits        |
+| `max_segment_size`       | `int`                | `5000`  | Segment size for LLM processing      |
+| `overlap_size`           | `int`                | `400`   | Overlap between segments             |
+| `verbose`                | `bool`               | `False` | Enable detailed logging              |
+| `show_progress`          | `bool`               | `False` | Show progress + chunk results        |
 
 ### `TransitionAnalyzer`
 
-| Parameter          | Type       | Default  | Description                        |
-| ------------------ | ---------- | -------- | ---------------------------------- |
-| `prompt_generator` | `Callable` | Required | Function that generates LLM prompt |
-| `model`            | `str`      | `None`   | OpenAI model name                  |
-| `llm_caller`       | `Callable` | `None`   | Custom LLM calling function        |
-
-### Factory Functions
-
-````python
-
-```python
-# OpenAI
-create_openai_caller(model="gpt-4o") -> Callable
-````
+| Parameter          | Type                   | Default              | Description               |
+| ------------------ | ---------------------- | -------------------- | ------------------------- |
+| `prompt_generator` | `Callable[[str], str]` | `get_default_prompt` | Prompt generator function |
+| `model`            | `str`                  | `None`               | OpenAI model name         |
 
 ---
 
@@ -179,18 +194,20 @@ create_openai_caller(model="gpt-4o") -> Callable
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ 1. SEGMENT     Split into LLM-sized windows (~2600 chars)   │
+│ 1. SEGMENT     Split into LLM-sized windows                 │
+│                (max_segment_size, overlap_size applied)     │
 └─────────────────────────────────────────────────────────────┘
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 2. ANALYZE     LLM finds transition points                  │
-│                "Here the mood shifts from joy to sadness"   │
+│                (Custom prompts for domain-specific analysis)│
 └─────────────────────────────────────────────────────────────┘
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 3. FILTER      Remove low-significance & duplicate points   │
+│                (significance_threshold, min_chunk_gap)      │
 └─────────────────────────────────────────────────────────────┘
                             │
                             ▼
@@ -201,6 +218,8 @@ create_openai_caller(model="gpt-4o") -> Callable
                             ▼
               [Chunk 1] [Chunk 2] [Chunk 3] ...
 ```
+
+---
 
 ## 📄 License
 

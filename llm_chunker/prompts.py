@@ -36,7 +36,8 @@ def get_legal_prompt(segment: str) -> str:
     Prompt specialized for legal document chunking.
     """
     return f"""
-You are a legal expert. Analyze the following text and identify points where the legal topic, clause type, or subject usage changes significantly.
+You are a 'Legislative Structuring Expert'. 
+Your task is to segment the following legal text into semantic chunks that are optimal for a RAG (Retrieval-Augmented Generation) system. Analyze the following text and identify points where the legal topic, clause type, or subject usage changes significantly.
 
 TEXT SEGMENT:
 {segment}

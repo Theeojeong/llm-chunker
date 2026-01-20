@@ -3,6 +3,14 @@ import time
 import os
 import logging
 from typing import Dict, Any, Callable, Optional
+from llm_chunker.prompts import get_default_prompt
+
+# Try to import json_repair for robust JSON parsing
+try:
+    import json_repair
+    HAS_JSON_REPAIR = True
+except ImportError:
+    HAS_JSON_REPAIR = False
 
 # ── Logger Setup ──
 logger = logging.getLogger("llm_chunker")
@@ -14,7 +22,7 @@ except ImportError:
     HAS_OPENAI = False
 
 
-def create_openai_caller(model: str = "gpt-4o") -> Callable[[str], str]:
+def create_openai_caller(model: str = "gpt-5-nano") -> Callable[[str], str]:
     """
     Factory function to create an OpenAI LLM caller with a specific model.
     
@@ -42,12 +50,10 @@ def create_openai_caller(model: str = "gpt-4o") -> Callable[[str], str]:
             )
 
         client = OpenAI(api_key=api_key)
-        logger.info(f"[LLM] Using model: {model}")
 
         try:
-            logger.debug(f"[LLM] Sending prompt ({len(prompt)} chars)")
-            
-            # GPT-5 계열은 temperature 파라미터를 지원하지 않음
+            logger.debug(f"  LLM 요청 중... (모델: {model})")
+
             if model.startswith("gpt-5"):
                 response = client.chat.completions.create(
                     model=model,
@@ -59,18 +65,15 @@ def create_openai_caller(model: str = "gpt-4o") -> Callable[[str], str]:
                     messages=[{"role": "user", "content": prompt}],
                     temperature=0.0
                 )
-            
+
             content = response.choices[0].message.content
-            logger.debug(f"[LLM] Received response ({len(content)} chars)")
+            logger.debug(f"  LLM 응답 수신 ({len(content):,} 글자)")
             return content
         except Exception as e:
-            logger.error(f"[LLM] OpenAI API Call Failed: {e}")
+            logger.error(f"  LLM API 오류: {e}")
             raise RuntimeError(f"OpenAI API Call Failed: {e}")
-    
+
     return caller
-
-
-
 
 
 # ── Legacy functions for backward compatibility ──
@@ -81,9 +84,6 @@ def openai_llm_caller(prompt: str) -> str:
     """
     model_name = os.environ.get("OPENAI_MODEL", "gpt-4o")
     return create_openai_caller(model_name)(prompt)
-
-
-
 
 
 # ──────────────────────────────────────────────────────────────
@@ -109,97 +109,73 @@ def sanitize_json_output(raw_text: str) -> str:
 
 
 def _extract_transition_points(data: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Flexibly extract transition points from various schema formats.
-    Supports: transition_points, emotional_phases, legal_sections, and any list-type value.
-    """
-    # Known schema keys (priority order)
-    known_keys = ["transition_points", "emotional_phases", "legal_sections", "topic_changes", "sections"]
-    
-    for key in known_keys:
-        if key in data and isinstance(data[key], list):
-            logger.debug(f"[Schema] Found key '{key}' with {len(data[key])} items")
-            return {"transition_points": data[key]}
-    
-    # Fallback: find first list-type value
-    for key, value in data.items():
-        if isinstance(value, list):
-            logger.debug(f"[Schema] Fallback: using key '{key}' with {len(value)} items")
-            return {"transition_points": value}
-    
-    logger.warning("[Schema] No transition points found in response")
-    return {"transition_points": []}
+    """Extract transition points from LLM response."""
+    return {"transition_points": data.get("transition_points", [])}
 
 
 class TransitionAnalyzer:
-    def __init__(self, 
-                 prompt_generator: Callable[[str], str], 
-                 llm_caller: Callable[[str], str] = None,
+    def __init__(self,
+                 prompt_generator: Optional[Callable[[str], str]] = None,
                  model: Optional[str] = None):
         """
         Initialize the TransitionAnalyzer.
-        
+
         Args:
             prompt_generator: Function that generates the prompt for a text segment.
-            llm_caller: Custom LLM caller function. If None, uses default OpenAI caller.
-            model: OpenAI model name (shortcut for create_openai_caller). 
-                   Ignored if llm_caller is provided.
-        
+                              If None, uses get_default_prompt.
+            model: OpenAI model name (e.g., "gpt-4o", "gpt-5-nano").
+                   If None, uses env var OPENAI_MODEL or defaults to "gpt-4o".
+
         Examples:
-            # Using default (env var OPENAI_MODEL or gpt-4o)
-            >>> analyzer = TransitionAnalyzer(prompt_generator=get_default_prompt)
-            
+            # Simplest usage (env var OPENAI_MODEL or gpt-4o)
+            >>> analyzer = TransitionAnalyzer()
+
             # Specifying model directly
+            >>> analyzer = TransitionAnalyzer(model="gpt-4o")
+
+            # Using custom prompt
             >>> analyzer = TransitionAnalyzer(
-            ...     prompt_generator=get_default_prompt,
-            ...     model="gpt-5-nano"
-            ... )
-            
-            # Using custom caller
-            >>> analyzer = TransitionAnalyzer(
-            ...     prompt_generator=get_default_prompt,
-            ...     llm_caller=create_openai_caller("gpt-4o-mini")
+            ...     prompt_generator=get_legal_prompt,
+            ...     model="gpt-4o"
             ... )
         """
-        self.prompt_generator = prompt_generator
-        
-        # Priority: llm_caller > model > default
-        if llm_caller:
-            self.llm_caller = llm_caller
-        elif model:
-            self.llm_caller = create_openai_caller(model)
+        self.prompt_generator = prompt_generator or get_default_prompt
+
+        if model:
+            self.llm_caller = create_openai_caller(model=model)
         else:
             self.llm_caller = DEFAULT_LLM_CALLER
 
     def analyze_segment(self, segment: str) -> Dict[str, Any]:
         prompt = self.prompt_generator(segment)
-        logger.info(f"[Analyzer] Analyzing segment ({len(segment)} chars)")
-        
+
         for attempt in range(3):
             try:
                 raw_response = self.llm_caller(prompt)
-                cleaned = sanitize_json_output(raw_response)
-                logger.debug(f"[Analyzer] Cleaned JSON: {cleaned[:200]}...")
-                
+                cleaned_json = sanitize_json_output(raw_response)
+
                 try:
-                    data = json.loads(cleaned)
+                    if HAS_JSON_REPAIR:
+                        data = json_repair.loads(cleaned_json)
+                    else:
+                        data = json.loads(cleaned_json)
                     result = _extract_transition_points(data)
-                    logger.info(f"[Analyzer] Found {len(result['transition_points'])} transition points")
-                    
-                    # Log each transition point
+
+                    tp_count = len(result['transition_points'])
+                    logger.info(f"  → LLM 응답: {tp_count}개 전환점 발견")
+
                     for i, tp in enumerate(result['transition_points']):
-                        logger.debug(f"  [TP {i+1}] sig={tp.get('significance', '?')}, text='{tp.get('start_text', '')[:30]}...'")
-                    
+                        logger.debug(f"    [{i+1}] sig={tp.get('significance', '?')} | '{tp.get('start_text', '')[:25]}...'")
+
                     return result
-                        
-                except json.JSONDecodeError as e:
-                    logger.warning(f"[Analyzer] JSON parse error (Attempt {attempt+1}): {e}")
-                    logger.debug(f"[Analyzer] Raw response: {raw_response[:300]}...")
-                    
+
+                except (json.JSONDecodeError, Exception) as e:
+                    logger.warning(f"  JSON 파싱 오류 (시도 {attempt+1}/3): {e}")
+
             except Exception as e:
-                logger.error(f"[Analyzer] LLM Error (Attempt {attempt+1}): {e}")
-            
+                logger.error(f"  LLM 오류 (시도 {attempt+1}/3): {e}")
+
             time.sleep(1)
-        
-        logger.warning("[Analyzer] All attempts failed, returning empty result")
+
+        logger.warning("  모든 시도 실패, 빈 결과 반환")
         return {"transition_points": []}
