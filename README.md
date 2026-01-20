@@ -79,7 +79,24 @@ chunks = chunker.split_text(your_text)  # list[str]
 
 ## 📖 커스텀 프롬프트 예제
 
-### 방법 1: PromptBuilder 사용
+### 방법 1: 내장 프롬프트 사용 (법률 문서) 추천
+
+```python
+from llm_chunker import GenericChunker, TransitionAnalyzer
+from llm_chunker.prompts import get_legal_prompt
+
+analyzer = TransitionAnalyzer(
+    prompt_generator=get_legal_prompt,
+    model="gpt-5-nano",
+)
+
+chunker = GenericChunker(analyzer=analyzer)
+chunks = chunker.split_text(your_legal_document)
+```
+
+다양한 도메인(기술 문서, 사내 규정, 의학 데이터 등) 특화 프롬프트 순차 업데이트 예정
+
+### 방법 2: PromptBuilder 사용
 
 ```python
 from llm_chunker import GenericChunker, TransitionAnalyzer, PromptBuilder
@@ -106,23 +123,6 @@ chunks = chunker.split_text(novel_text)
 | `domain`             | `str` | `"text"`             | 분석할 텍스트 도메인 |
 | `find`               | `str` | `"semantic changes"` | 찾을 전환점 유형     |
 | `custom_instruction` | `str` | `None`               | 추가 지시사항        |
-
-### 방법 2: 내장 프롬프트 사용 (법률 문서에 특화) 추천
-
-```python
-from llm_chunker import GenericChunker, TransitionAnalyzer
-from llm_chunker.prompts import get_legal_prompt
-
-analyzer = TransitionAnalyzer(
-    prompt_generator=get_legal_prompt,
-    model="gpt-4o",
-)
-
-chunker = GenericChunker(analyzer=analyzer)
-chunks = chunker.split_text(legal_document)
-```
-
-추가 내장 프롬프트 업데이트 예정
 
 ### 방법 3: 커스텀 프롬프트 함수 직접 작성
 
