@@ -79,7 +79,7 @@ chunks = chunker.split_text(your_text)  # list[str]
 
 ## 📖 커스텀 프롬프트 예제
 
-### 방법 1: PromptBuilder 사용 (권장)
+### 방법 1: PromptBuilder 사용
 
 ```python
 from llm_chunker import GenericChunker, TransitionAnalyzer, PromptBuilder
@@ -107,7 +107,7 @@ chunks = chunker.split_text(novel_text)
 | `find`               | `str` | `"semantic changes"` | 찾을 전환점 유형     |
 | `custom_instruction` | `str` | `None`               | 추가 지시사항        |
 
-### 방법 2: 내장 프롬프트 사용 (법률)
+### 방법 2: 내장 프롬프트 사용 (법률 문서에 특화) 추천
 
 ```python
 from llm_chunker import GenericChunker, TransitionAnalyzer
@@ -126,28 +126,73 @@ chunks = chunker.split_text(legal_document)
 
 ### 방법 3: 커스텀 프롬프트 함수 직접 작성
 
+예)
+
 ```python
 from llm_chunker import GenericChunker, TransitionAnalyzer
 
 def my_custom_prompt(segment: str) -> str:
     return f"""
-다음 텍스트에서 주제가 바뀌는 지점을 찾아주세요.
+You are a 'Legal Document Structuring Expert' for RAG chunking.
 
-텍스트:
+PRIMARY OBJECTIVE:
+Return chunk boundary points that maximize retrieval precision for legal QA.
+
+TEXT SEGMENT:
 {segment}
 
-JSON 형식으로 반환:
+ABSOLUTE RULES (must follow):
+A) STRUCTURAL HEADINGS MUST BE BOUNDARIES.
+   If you see any of these, treat them as a new chunk start:
+   - Korean law headings: "제N조", "제N조의M", "제N장/절/관", "부칙", "별표"
+   - English equivalents: "Article N", "Section N", "Chapter", "Part", "Schedule/Appendix"
+   For EVERY detected new Article/Section heading (e.g., 제4조 -> 제4조의2),
+   output a transition point with:
+   - significance = 10
+   - explanation mentions "STRUCTURAL HEADING"
+   - start_text is the EXACT heading line as it appears in the text (do NOT paraphrase).
+
+B) SIZE SAFETY (to avoid oversized chunks):
+   Target chunk size: 900–1500 characters.
+   Hard max (do not exceed): 2200 characters.
+   If two consecutive structural headings would create an oversized chunk,
+   you MUST add extra boundaries inside that range, using:
+   - 항/호/목 markers, ①②③…, (1)(2)…,
+   - numbered lists "1. 2. 3.",
+   - provisos/conditions like "다만", "단서", "예외", "특례",
+   - clause-type shifts (below).
+   Any size-enforcement boundary should have significance 8–10.
+
+C) CLAUSE-TYPE SHIFTS (often large even within same domain):
+   Treat transitions between these legal functions as significant (usually 7–10):
+   - Scope / What is taxed (과세대상/정의/요건/범위)
+   - Liability / Who pays (납세의무자/연대납부/대리납부)
+   - Calculation mechanics (과세표준/세율/가산/공제/한도/산식)
+   - Procedure / Deadlines (신고/기한/절차/서류)
+   - Jurisdiction / Authority (관할/세무서)
+   - Exceptions (비과세/면제/특례/단서)
+
+OUTPUT FORMAT:
+Return ONE JSON object (no markdown):
 {{
   "transition_points": [
     {{
-      "start_text": "변화가 시작되는 텍스트 (원문 그대로)",
-      "topic_before": "이전 주제",
-      "topic_after": "이후 주제",
-      "significance": 1-10 정수,
-      "explanation": "설명"
+      "start_text": "Exact quote where the NEW chunk begins (must match text exactly)",
+      "topic_before": "Article/section + clause type BEFORE",
+      "topic_after": "Article/section + clause type AFTER",
+      "significance": <1-10 integer>,
+      "explanation": "Reason: (1) structural heading OR (2) clause-type shift OR (3) size enforcement"
     }}
   ]
 }}
+
+CRITICAL VALIDATION (before final output):
+- Every start_text MUST be an exact substring from the given segment.
+- Prefer using heading lines as start_text because they match reliably.
+- Do NOT invent text. If unsure, omit that point.
+- Ensure all structural headings after the first are included as significance 10 boundaries.
+
+If none, return {{ "transition_points": [] }}.
 """.strip()
 
 analyzer = TransitionAnalyzer(

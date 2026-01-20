@@ -13,7 +13,7 @@ DEFAULT_SIGNIFICANCE_THRESHOLD = 7
 DEFAULT_MIN_CHUNK_GAP = 200
 DEFAULT_FUZZY_MATCH_THRESHOLD = 0.8
 DEFAULT_MAX_SEGMENT_SIZE = 5000  # Maximum characters per segment for LLM processing
-DEFAULT_OVERLAP_SIZE = 400  # Characters to overlap between segments
+DEFAULT_OVERLAP_SIZE = 600  # Characters to overlap between segments
 
 
 class GenericChunker:
